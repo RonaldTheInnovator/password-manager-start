@@ -1,7 +1,9 @@
+from textwrap import indent
 from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
 
@@ -52,6 +54,12 @@ def save():
     website = website_entry.get()
     username = username_entry.get()
     password = password_entry.get()
+    new_data = {
+        website: {
+            "email": username,
+            "password": password
+        }
+    }
 
 
 
@@ -59,16 +67,65 @@ def save():
     if len(website) == 0 or len(username) == 0 or len(password) == 0:
         its_not_ok = messagebox.showinfo(title="Oops", message="Please dont leave any field empty")
     else:
-        is_ok = messagebox.askokcancel(title=website,message=f"These are the details entered: \nEmail: {username} "
-                                                     f"\nPassword: {password} \nIs it ok to save")
-        if is_ok:
-            with open("data.txt","a") as data_file:
-                data_file.write(f"{website} | {username} | {password}\n")
+        # # is_ok = messagebox.askokcancel(title=website,message=f"These are the details entered: \nEmail: {username} "
+        # #                                              f"\nPassword: {password} \nIs it ok to save")
+        # if is_ok:
+            try:
+
+                with open("data.json","r") as data_file:
+                    #READING OLD DATA
+                    data = json.load(data_file)  # READ FROM JSON
+
+
+            except FileNotFoundError:
+                with open("data.json", "w") as data_file:
+                    # SAVING UPDATED DATA
+                    json.dump(new_data, data_file, indent=4)
+            else:
+                # UPDATING OLD DATA WITH NEW DATA
+                data.update(new_data)
+                # json.dump(new_data,data_file, indent=4) WRITE INTO JSON
+
+                with open("data.json", "w") as data_file:
+                    # SAVING UPDATED DATA
+                    json.dump(data, data_file, indent=4)
+            finally:
                 website_entry.delete(0,END)
                 username_entry.delete(0, END)
                 password_entry.delete(0, END)
 
 
+# ---------------------------- FIND PASSWORD ------------------------------- #
+def find_password():
+    website = website_entry.get()
+
+    try:
+
+        with open("data.json", "r") as data_file:
+            # READING OLD DATA
+            data = json.load(data_file)  # READ FROM JSON
+
+    except FileNotFoundError:
+        file_not_found_error = messagebox.showinfo(title="Error",
+                                                       message="No Data File Found")
+        website_entry.delete(0, END)
+
+    else:
+        try:
+            data[website]
+
+        except KeyError:
+            key_error_display = messagebox.showinfo(title="Error",
+                                                    message=f"No Details for the {website} exists")
+        else:
+            display_info = messagebox.showinfo(title=f"{website} Website",
+                                               message=f"email: {data[website]['email']}\npassword: {data[website]['password']}")
+        finally:
+            website_entry.delete(0, END)
+
+
+
+    # print(data[website]["email"])
 # ---------------------------- UI SETUP ------------------------------- #
 
 window = Tk()
@@ -81,10 +138,12 @@ website_label = Label(text="Website:")
 username_label = Label(text="Email/Username:")
 password_label = Label(text="Password:")
 generate_button = Button(text="Generate Password", command=generate_password)
-add_button = Button(text="Add",width=36,command=save)
-website_entry = Entry(width=35)
-username_entry = Entry(width=35)
+add_button = Button(text="Add",width=30,command=save)
+website_entry = Entry(width=21)
+username_entry = Entry(width=40)
 password_entry = Entry(width=21)
+search_button = Button(text="Search",command=find_password,width=10)
+
 
 
 
@@ -94,7 +153,7 @@ password_entry = Entry(width=21)
 canvas.grid(column=1,row=0)
 
 website_label.grid(column=0,row=1)
-website_entry.grid(column=1,row=1,columnspan=2)
+website_entry.grid(column=1,row=1)
 website_entry.focus()
 
 username_label.grid(column=0,row=2)
@@ -107,6 +166,7 @@ password_entry.grid(column=1,row=3)
 generate_button.grid(column=2,row=3)
 
 add_button.grid(column=1,row=4,columnspan=2)
+search_button.grid(column=2,row=1)
 
 
 
